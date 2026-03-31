@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RWI Classroom Toolbox</title>
+    <link href="https://fonts.googleapis.com/css2?family=Andika&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --rwi-red: #d32f2f;
+            --pastel-red: #ffcdd2;
+            --card-cream: #fffdf2;
+            --bg-color: #e3f2fd; 
+            --text-dark: #333;
+            --alt-blue: #bbdefb;
+            --decoder-green: #d1e7dd;
+            --practice-purple: #f3e5f5;
+            --alien-green: #e8f5e9;
+            --test-gold: #fff9c4;
+            --game-blue: #e1f5fe;
+            --guide-grey: #e0e0e0;
+            --correct-green: #2e7d32;
+            --incorrect-red: #c62828;
+            --radius-main: 18px;
+        }
+
+        body {
+            font-family: 'Andika', -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow-y: auto;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* --- Home Screen & Menu Grids --- */
+        .grid-menu {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            padding: 20px;
+            width: 95vw;
+            max-width: 600px;
+            margin: auto;
+            position: relative;
+        }
+
+        .menu-btn {
+            height: 90px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: var(--radius-main);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            transition: transform 0.1s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            border: 4px solid;
+            padding: 5px;
+            user-select: none;
+            background-color: white;
+        }
+
+        .menu-btn:active { transform: scale(0.96); }
+        .btn-set { background-color: var(--card-cream); border-color: var(--rwi-red); color: #333; }
+        .btn-alt { background-color: var(--alt-blue); border-color: #1a4a8e; color: #1a4a8e; }
+        .btn-red { background-color: var(--pastel-red); border-color: var(--rwi-red); color: #800000; }
+        .btn-decoder { background-color: var(--decoder-green); border-color: #0f5132; color: #0f5132; }
+        .btn-practice { background-color: var(--practice-purple); border-color: #4a148c; color: #4a148c; }
+        .btn-alien { background-color: var(--alien-green); border-color: #1b5e20; color: #1b5e20; }
+        .btn-test { background-color: var(--test-gold); border-color: #afb42b; color: #827717; }
+        .btn-game { background-color: var(--game-blue); border-color: #01579b; color: #01579b; }
+        .btn-guide { background-color: var(--guide-grey); border-color: #9e9e9e; color: #424242; }
+
+        /* --- Layout Containers --- */
+        .view { 
+            display: none; 
+            flex-direction: column; 
+            align-items: center; 
+            width: 100%; 
+            height: 100vh; 
+            justify-content: center; 
+            box-sizing: border-box; 
+            padding: 15px; 
+            position: fixed;
+            top: 0; left: 0;
+            background: var(--bg-color);
+            z-index: 10;
+        }
+
+        .set-menu-container {
+            width: 95vw;
+            max-width: 800px;
+            background: white;
+            padding: 25px;
+            border-radius: 25px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+            max-height: 92vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .sound-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
+            gap: 12px;
+            margin: 20px 0;
+            width: 100%;
+        }
+
+        .sound-tile {
+            background: var(--card-cream);
+            border: 2px solid var(--rwi-red);
+            border-radius: 12px;
+            padding: 12px 5px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex; align-items: center; justify-content: center;
+            min-height: 60px; font-size: 1.3rem; 
+        }
+
+        /* --- Cards --- */
+        .card-container { width: 90vw; max-width: 450px; height: 55vh; perspective: 1200px; position: relative; }
+        #progress-container { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); width: 90%; height: 8px; background: rgba(0,0,0,0.05); border-radius: 4px; overflow: hidden; display: none; }
+        #progress-fill { height: 100%; background: var(--rwi-red); width: 0%; transition: width 0.1s linear; }
+        .card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s, left 0.3s ease-out, opacity 0.3s ease-out; transform-style: preserve-3d; left: 0; }
+        .card-inner.is-flipped { transform: rotateY(180deg); }
+        .card-face { 
+            position: absolute; width: 100%; height: 100%; backface-visibility: hidden; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+            border-radius: 25px; border: 10px solid var(--rwi-red); 
+            background-color: var(--card-cream); box-shadow: 0 12px 30px rgba(0,0,0,0.12); 
+            padding: 15px; box-sizing: border-box; overflow: hidden; 
+        }
+        .card-back { transform: rotateY(180deg); }
+        
+        .sound-text { font-weight: normal; color: var(--text-dark); text-align: center; width: 100%; white-space: nowrap; transition: font-size 0.2s ease-in-out; }
+        
+        .back-content { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 100%; text-align: center; }
+        .emoji-display { font-size: 5.5rem; margin-bottom: 5px; }
+        
+        .chip-back { border: 3px solid #555; padding: 5px 12px; font-weight: bold; border-radius: 12px; background: white; margin-bottom: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; max-width: 90%; }
+        .chip-dot { width: 8px; height: 8px; background: #333; border-radius: 50%; margin-top: 4px; }
+        .chip-sf { text-decoration: underline; text-decoration-thickness: 4px; text-underline-offset: 4px; }
+
+        .back-chips, .sound-chips, .game-chips, .decoder-chips { display: flex; flex-direction: row; flex-wrap: nowrap; justify-content: center; align-items: center; gap: 8px; width: 100%; padding: 10px 0; box-sizing: border-box; transition: transform 0.2s ease-out; }
+        .chip { position: relative; background: white; border: 3px solid #555; padding: 4px 8px; font-size: 2.2rem; font-weight: bold; border-radius: 12px; min-width: 60px; height: 90px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0; box-sizing: border-box; }
+        .chip.special-friend span { text-decoration: underline; text-decoration-thickness: 4px; text-underline-offset: 4px; }
+        .split-bridge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); width: 90%; height: 16px; pointer-events: none; }
+
+        .tag-text { font-size: 0.8rem; font-weight: bold; color: #888; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 1px; }
+        .say-it-text { font-size: 1.4rem; color: #555; margin-bottom: 10px; font-weight: bold; }
+        .mnemonic-text { font-size: 1.5rem; color: var(--rwi-red); font-weight: bold; text-align: center; line-height: 1.2; padding: 0 10px; margin-bottom: 8px; }
+        .handwriting-text { font-size: 1.1rem; color: #666; text-align: center; line-height: 1.2; padding: 0 15px; }
+        .words-list-row { font-size: 1.4rem; color: #1a4a8e; text-align: center; padding: 0 10px; margin-top: 10px; }
+
+        /* --- Keyboard --- */
+        .keyboard-container { margin-top: 10px; width: 100%; max-width: 650px; display: flex; flex-direction: column; gap: 8px; background: rgba(255,255,255,0.4); padding: 12px; border-radius: 20px; }
+        .keyboard-row { display: flex; justify-content: center; gap: 6px; width: 100%; }
+        .key { background: white; border: 2px solid #ccc; border-radius: 8px; padding: 14px 0; flex: 1; max-width: 55px; font-size: 1.4rem; font-weight: bold; cursor: pointer; text-align: center; box-shadow: 0 3px 0 #ddd; transition: background 0.1s, transform 0.05s; }
+        .key:active, .key.active-press { transform: translateY(2px); box-shadow: none; background-color: #fff176; border-color: #fbc02d; }
+        .key.wide { max-width: 90px; font-size: 1.1rem; }
+        .key.space { max-width: 260px; }
+        
+        .input-box { padding: 15px; font-size: 1.5rem; border-radius: 12px; border: 3px solid; width: 90%; max-width: 500px; text-align: center; font-family: 'Andika', sans-serif; margin-bottom: 10px; }
+        #decoder-input { border-color: #0f5132; }
+        #lcw-input { border-color: #800000; font-size: 2.5rem; letter-spacing: 2px; }
+
+        /* --- Game Area --- */
+        .game-area { text-align: center; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .game-word-box { background: white; border: 8px solid var(--rwi-red); border-radius: 25px; padding: 20px; width: 95%; max-width: 450px; font-size: 4.5rem; min-height: 150px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; box-sizing: border-box; box-shadow: 0 10px 20px rgba(0,0,0,0.1); margin-bottom: 15px; transition: font-size 0.2s ease-in-out; }
+        .game-choices { display: flex; justify-content: center; gap: 20px; width: 100%; flex-wrap: wrap; }
+        .choice-btn { background: white; border: 5px solid #ccc; border-radius: 20px; padding: 15px; cursor: pointer; transition: transform 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; width: 130px; box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
+        .choice-btn:active { transform: scale(0.9); }
+        .choice-btn span { font-size: 3.5rem; }
+        .choice-btn b { font-size: 1.2rem; display: block; }
+        .choice-text-btn { background: white; border: 5px solid #4a148c; border-radius: 15px; padding: 15px 25px; cursor: pointer; font-size: 2.5rem; font-weight: bold; color: #4a148c; min-width: 100px; box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
+
+        /* --- Missing Sound Builder --- */
+        .ms-word { font-size: 4rem; font-weight: bold; letter-spacing: 2px; }
+        .ms-blank { display: inline-block; min-width: 60px; height: 4rem; border-bottom: 6px solid #ccc; margin: 0 5px; color: var(--rwi-red); }
+
+        /* --- Assessment Result --- */
+        #result-score { font-size: 4rem; color: var(--rwi-red); font-weight: bold; margin: 10px 0; }
+
+        .nav-buttons { margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        button.nav { padding: 12px 20px; font-size: 1.1rem; border-radius: 12px; border: none; cursor: pointer; font-weight: bold; font-family: inherit; }
+        .btn-home { background-color: #455a64; color: white; }
+        .btn-primary { background-color: var(--rwi-red); color: white; }
+        .timer-opt { padding: 8px 12px; border-radius: 8px; border: 2px solid #ccc; background: white; cursor: pointer; font-weight: bold; font-family: inherit; }
+        .timer-opt.active { border-color: var(--rwi-red); background: var(--rwi-red); color: white; }
+        .counter { margin-top: 10px; font-weight: bold; color: #546e7a; }
+
+        /* --- Custom Audio Toggle Button --- */
+        .sound-toggle { position: absolute; right: 20px; top: 15px; background: white; border: 3px solid #ccc; padding: 6px 12px; border-radius: 12px; font-size: 1.1rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.05); color: #555; z-index: 100; transition: 0.2s; font-family: inherit; }
+        .sound-toggle.on { border-color: var(--correct-green); color: var(--correct-green); }
+
+        @media (max-width: 480px) {
+            .menu-btn { height: 85px; font-size: 0.95rem; }
+            .sound-text { font-size: 4.5rem; }
+            .emoji-display { font-size: 4.5rem; }
+            .chip-back { font-size: 1.8rem; }
+            .mnemonic-text { font-size: 1.2rem; }
+            .handwriting-text { font-size: 0.95rem; }
+            .choice-btn { width: 115px; padding: 10px; }
+            .choice-btn span { font-size: 2.8rem; }
+            .choice-text-btn { font-size: 2rem; padding: 12px 20px; }
+            .ms-word { font-size: 3.5rem; }
+            .sound-toggle { top: -10px; right: 10px; font-size: 0.9rem; padding: 4px 8px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Main Home Screen -->
+    <div id="home-screen" class="grid-menu" style="display: grid;">
+        <button id="sound-toggle-btn" class="sound-toggle on" onclick="toggleSound()">🔊 Sounds On</button>
+        
+        <div style="grid-column: span 2; display: flex; flex-direction: column; align-items: center; margin-bottom: 10px; margin-top: 15px;">
+            <h1 style="color: #1a4a8e; font-size: 2.5rem; margin: 0; text-align: center; width: 100%;">Phonics Toolbox</h1>
+        </div>
+
+        <div class="menu-btn btn-set" onclick="playSound('click'); openSoundsFolder()">Speed Sounds 🔊</div>
+        <div class="menu-btn btn-alt" onclick="playSound('click'); openSetMenu('altSounds')">Alt Sounds ✨</div>
+        <div class="menu-btn btn-red" onclick="playSound('click'); openSetMenu('redWords')">Red Words 🛑</div>
+        <div class="menu-btn btn-decoder" onclick="playSound('click'); openDecoder()">Word Decoder 🐸</div>
+        
+        <!-- Re-ordered to sit next to each other -->
+        <div class="menu-btn btn-practice" onclick="playSound('click'); openMenu('word-practice-menu')" style="grid-column: span 1;">Word Practice 📖</div>
+        <div class="menu-btn btn-game" onclick="playSound('click'); openMenu('games-menu')" style="grid-column: span 1;">Games 🎮</div>
+        
+        <div class="menu-btn btn-guide" onclick="playSound('click'); openGuidance()" style="grid-column: span 2;">Teacher Guidance ℹ️</div>
+    </div>
+
+    <!-- Word Practice Sub-Menu -->
+    <div id="word-practice-menu" class="view">
+        <div class="set-menu-container">
+            <h2 style="color: #4a148c;">Word Practice 📖</h2>
+            <div class="grid-menu" style="width: 100%; max-width: 400px; grid-template-columns: 1fr;">
+                <div class="menu-btn btn-practice" onclick="playSound('click'); openMenu('practice-menu-view')">Reading Practice 📖</div>
+                <div class="menu-btn btn-test" onclick="playSound('click'); openMenu('test-selection-view')">Phonics Test 🏆</div>
+            </div>
+            <button class="nav btn-home" onclick="playSound('click'); goHome()">🏠 Home</button>
+        </div>
+    </div>
+
+    <!-- Games Sub-Menu -->
+    <div id="games-menu" class="view">
+        <div class="set-menu-container">
+            <h2 style="color: #01579b;">Games 🎮</h2>
+            <div class="grid-menu" style="width: 100%; max-width: 400px; grid-template-columns: 1fr;">
+                <div class="menu-btn btn-red" onclick="playSound('click'); openMenu('lcw-menu-view')">Look, Cover, Write 🙈</div>
+                <div class="menu-btn btn-alien" onclick="playSound('click'); openMenu('game-selection-view')">Real or Alien? 👾</div>
+                <div class="menu-btn btn-game" onclick="playSound('click'); openMenu('ms-menu-view')">Missing Sound 🧩</div>
+            </div>
+            <button class="nav btn-home" onclick="playSound('click'); goHome()">🏠 Home</button>
+        </div>
+    </div>
+
+    <!-- Navigation Views -->
+    <div id="sounds-folder-view" class="view">
+        <div class="set-menu-container">
+            <h2 style="color: var(--rwi-red);">Speed Sounds</h2>
+            <div class="grid-menu" style="width: 100%; max-width: 400px; grid-template-columns: 1fr;">
+                <div class="menu-btn btn-set" onclick="playSound('click'); openSetMenu('set1')">Set 1</div>
+                <div class="menu-btn btn-set" onclick="playSound('click'); openSetMenu('set2')">Set 2</div>
+                <div class="menu-btn btn-set" onclick="playSound('click'); openSetMenu('set3')">Set 3</div>
+            </div>
+            <button class="nav btn-home" onclick="playSound('click'); goHome()">🏠 Home</button>
+        </div>
+    </div>
+
+    <div id="practice-menu-view" class="view">
+        <div class="set-menu-container">
+            <h2 style="color: #4a148c;">Reading Practice</h2>
+            <div class="grid-menu" style="width: 100%; max-width: 400px; grid-template-columns: 1fr;">
+                <div class="menu-btn btn-practice" onclick="playSound('click'); openPracticeSubMenu('Set 1')">Set 1</div>
+                <div class="menu-btn btn-practice" onclick="playSound('click'); openPracticeSubMenu('Set 2')">Set 2</div>
+                <div class="menu-btn btn-practice" onclick="playSound('click'); openPracticeSubMenu('Set 3')">Set 3</div>
+            </div>
+            <button class="nav btn-home" onclick="playSound('click'); openMenu('word-practice-menu')">⬅️ Back</button>
+        </div>
+    </div>
+
+    <div id="practice-type-view" class="view">
+        <div class="set-menu-container">
+            <h2 id="practice-type-title">Words</h2>
+            <div class="grid-menu" style="width: 100%; max-width: 400px;">
+                <div class="menu-btn btn-practice" id="real-words-btn" onclick="playSound('click')">Real ✅</div>
+                <div class="menu-btn btn-alien" id="alien-words-btn" onclick="playSound('click')">Alien 👽</div>
+            </div>
+            <button class="nav btn-home" onclick="playSound('click'); openMenu('practice-menu-view')">⬅️ Back</button>
+        </div>
+    </div>
+
+    <div id="game-selection-view" class="view">
+        <div class="set-menu-container">
+            <h2 style="color: #1b5e20;">Real or Alien? 👾</h2>
+            <div class="grid-menu" style="width: 100%; max-width: 500px;">
+                <div class="menu-btn btn-alien" onclick="playSound('click'); startGame('Set 1')">Set 1</div>
+                <div class="menu-btn btn-alien" onclick="playSound('click'); startGame('Set 2')">Set 2</div>
+                <div class="menu-btn btn-alien" onclick="playSound('click'); startGame('Set 3')">Set 3</div>
+                <div class="menu-btn btn-alien" onclick="playSound('click'); startGame('Mixed')">Mixed</div>
+            </div>
+            <button class="nav btn-home" onclick="playSound('click'); openMenu('games-menu')">⬅️ Back</button>
+        </div>
+    </div>
+
+    <!-- Missing Sound Menu -->
+    <div id="ms-menu-view" class="view">
+        <div class="set-menu-container">
+            <h2 style="color: #01579b;">Missing Sound 🧩</h2>
+            <div class="grid-menu" style="width: 100%; max-width: 500px;">
+                <div class="menu-btn btn-game" onclick="playSound('click'); startMissingSound('Set 1')">Set 1</div>
+                <div class="menu-btn btn-game" onclick="playSound('click'); startMissingSound('Set 2')">Set 2</div>
+                <div class="menu-btn btn-game" onclick="playSound('click'); startMissingSound('Set 3')">Set 3</div>
+                <div class="menu-btn btn-game" onclick="playSound('click'); startMissingSound('Red Words')">Red Words</div>
+            </div>
+            <button class="nav btn-home" onclick="playSound('click'); openMenu('games-menu')">⬅️ Back</button>
+        </div>
+    </div>
+
+    <div id="test-selection-view" class="view">
+        <div class="set-menu-container">
+            <h2 style="color: #827717;">Phonics Screening Test 🏆</h2>
+            <div class="grid-menu" style="width: 100%; max-width: 400px; grid-template-columns: 1fr;">
+                <div class="menu-btn btn-test" onclick="playSound('click'); startTest(false)">Practice Mode</div>
+                <div class="menu-btn btn-test" onclick="playSound('click'); startTest(true)">Assessment Mode</div>
+            </div>
+            <button class="nav btn-home" onclick="playSound('click'); openMenu('word-practice-menu')">⬅️ Back</button>
+        </div>
+    </div>
+
+    <!-- LCW Category Menu -->
+    <div id="lcw-menu-view" class="view">
+        <div class="set-menu-container">
+            <h2 style="color: #800000;">Look, Cover, Write 🙈</h2>
+            <div class="grid-menu" style="width: 100%; max-width: 500px;">
+                <div class="menu-btn btn-red" onclick="playSound('click'); openLCWGroupSelection('Set 1')">Set 1</div>
+                <div class="menu-btn btn-red" onclick="playSound('click'); openLCWGroupSelection('Set 2')">Set 2</div>
+                <div class="menu-btn btn-red" onclick="playSound('click'); openLCWGroupSelection('Set 3')">Set 3</div>
+                <div class="menu-btn btn-red" onclick="playSound('click'); openLCWGroupSelection('Red Words')">Red Words</div>
+            </div>
+            <button class="nav btn-home" onclick="playSound('click'); openMenu('games-menu')">⬅️ Back</button>
+        </div>
+    </div>
+
+    <!-- LCW Group Menu -->
+    <div id="lcw-group-view" class="view">
+        <div class="set-menu-container">
+            <h2 id="lcw-group-title" style="color: #800000;">Select Group</h2>
+            <div id="lcw-group-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap:12px; max-width:600px; margin: 20px auto; width: 100%;">
+                <!-- Groups injected here -->
+            </div>
+            <button class="nav btn-home" onclick="playSound('click'); openMenu('lcw-menu-view')">⬅️ Back</button>
+        </div>
+    </div>
+
+    <!-- Teacher Guidance View -->
+    <div id="guidance-view" class="view">
+        <div class="set-menu-container">
+            <h2 style="text-align: center; color: var(--text-dark); margin-top: 0;">Teacher Guidance ℹ️</h2>
+            <div style="text-align: left; padding: 10px; font-size: 1.1rem; line-height: 1.6; color: #333;">
+                <h3 style="color: #424242; margin-top: 15px; border-bottom: 2px solid #ccc; padding-bottom: 5px;">RWI Phonics Framework</h3>
+                <p><b>Pure Sounds:</b> Ensure sounds are pronounced cleanly without an 'uh' at the end (e.g. 'mmmm' not 'muh', 's' not 'suh'). This drastically reduces cognitive load when pupils are blending words.</p>
+                <p><b>Stretchy vs. Bouncy:</b> Set 1 sounds are introduced as either continuous/stretchy (m, s, n, f, l, r, v, z, sh, th, ng) or short/bouncy (a, e, i, o, u, b, c, d, g, h, j, p, q, t, w, x, y, ch).</p>
+                <p><b>Special Friends:</b> Emphasize "Special Friends" (two or three letters making one sound) before pupils read a word. The visual 'chips' in the practice sections map these clearly.</p>
+                <p><b>Fred Talk:</b> Guide pupils to sound out words using pure sounds before blending (e.g. c-a-t = cat). For older pupils, internalize this to "Fred in your head".</p>
+                
+                <h3 style="color: #424242; margin-top: 25px; border-bottom: 2px solid #ccc; padding-bottom: 5px;">Missing Sound Builder 🧩</h3>
+                <p>This tool develops spelling accuracy by focusing on grapheme position. For example, the <i>/ai/</i> sound is typically spelled 'ay' at the end of a word (play) but 'ai' in the middle (snail). Encouraging older pupils to recognize these orthographic patterns builds independence and directly supports Entry Level writing targets.</p>
+
+                <h3 style="color: #424242; margin-top: 25px; border-bottom: 2px solid #ccc; padding-bottom: 5px;">Look, Cover, Write, Check 🙈</h3>
+                <p>This spelling tool builds orthographic memory. Words are presented in chunks of 5, scaling in difficulty. The word flashes for 3 seconds, is covered, and the pupil must recreate it using the keyboard. Errors are shown to the pupil so they can re-map the visual pattern.</p>
+            </div>
+            <div class="action-bar"><button class="nav btn-home" onclick="playSound('click'); goHome()">🏠 Back to Home</button></div>
+        </div>
+    </div>
+
+    <!-- Set Selection View -->
+    <div id="set-menu-view" class="view">
+        <div class="set-menu-container">
+            <h2 id="set-title">Set</h2>
+            <div id="sound-mat" class="sound-grid"></div>
+            <div id="timer-box" style="margin: 10px 0; padding: 10px; background: #f0f7ff; border-radius: 12px; border: 1px solid #cce3f5; width: 90%;">
+                <p style="font-weight:bold; margin:0 0 5px 0; color: #1a4a8e;">Timer Speed:</p>
+                <div id="timer-options-container" style="display: flex; justify-content: center; gap: 8px;"></div>
+            </div>
+            <div class="action-bar">
+                <button id="grid-back-btn" class="nav btn-home" onclick="playSound('click'); goHome()">Back</button>
+                <button class="nav btn-primary" onclick="playSound('click'); startCards(false)">Start</button>
+                <button class="nav btn-primary" style="background-color: #ff9800;" onclick="playSound('click'); startCards(true)">🔀 Shuffle</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- App View (The Cards) -->
+    <div id="app-view" class="view">
+        <div class="card-container" id="mainCardContainer" onclick="flipCard()">
+            <div id="progress-container"><div id="progress-fill"></div></div>
+            <div class="card-inner" id="cardInner">
+                <div class="card-face card-front"><div class="sound-text" id="frontDisplay"></div></div>
+                <div class="card-face card-back">
+                    <div class="back-content" id="backContainer"></div>
+                </div>
+            </div>
+        </div>
+        <div class="nav-buttons" id="standard-nav">
+            <button class="nav btn-home" onclick="playSound('click'); goHome()">🏠 Home</button>
+            <button class="nav" onclick="playSound('click'); prevCard()">Prev</button>
+            <button class="nav btn-primary" onclick="playSound('click'); nextCard()">Next</button>
+        </div>
+        <div class="nav-buttons" id="assessment-nav" style="display:none; gap: 20px;">
+            <button class="nav" style="background-color: #c62828; color: white;" onclick="scoreAssessment(false)">❌ Incorrect</button>
+            <button class="nav" style="background-color: #2e7d32; color: white;" onclick="scoreAssessment(true)">✅ Correct</button>
+            <button class="nav btn-home" onclick="playSound('click'); goHome()">Exit</button>
+        </div>
+        <div class="counter" id="counter"></div>
+    </div>
+
+    <!-- Game View (Real or Alien) -->
+    <div id="game-view" class="view">
+        <div class="game-area">
+            <h2 id="game-score-display" style="color: #1b5e20; margin-top: 0;">Round 1/10</h2>
+            <div id="game-timer" style="font-weight: bold; color: #555; margin-bottom: 5px;">Time: 0.0s</div>
+            <div id="game-flash" style="height: 10px; width: 100%; margin-bottom: 10px; border-radius: 5px;"></div>
+            
+            <div class="game-word-box" id="gameWordDisplay"></div>
+            <div id="game-sound-clue" class="game-chips"></div>
+            
+            <div class="game-choices" id="choices-container-game">
+                <div class="choice-btn" style="border-color:#4caf50;" onclick="handleGameChoice(true)"><span>✅</span><b>Real</b></div>
+                <div class="choice-btn" style="border-color:#1b5e20;" onclick="handleGameChoice(false)"><span>👽</span><b>Alien</b></div>
+            </div>
+            
+            <div class="nav-buttons">
+                <button class="nav btn-home" onclick="playSound('click'); goHome()">🏠 Home</button>
+                <button class="nav" id="game-clue-btn" onclick="playSound('click'); showGameClue()" style="background:#fff3e0; color:#e65100;">Help? 🐸</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Missing Sound Builder View -->
+    <div id="missing-sound-view" class="view">
+        <div class="game-area">
+            <h2 id="ms-score-display" style="color: #01579b; margin-top: 0;">Missing Sound 🧩</h2>
+            <div id="ms-flash" style="height: 10px; width: 100%; margin-bottom: 10px; border-radius: 5px;"></div>
+            
+            <div class="game-word-box" style="border-color: #01579b; flex-direction: column;">
+                <div class="emoji-display" id="ms-emoji" style="font-size: 4rem;">🐌</div>
+                <div class="ms-word" id="ms-word">sn<span class="ms-blank"></span>l</div>
+            </div>
+            
+            <div class="game-choices" id="ms-choices" style="gap: 15px; flex-wrap: wrap;"></div>
+            
+            <div class="nav-buttons">
+                <button class="nav btn-home" onclick="playSound('click'); goHome()">🏠 Home</button>
+                <button class="nav" style="background:#e0e0e0; color:#333;" onclick="playSound('click'); nextMissingSound()">Skip</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Look Cover Write View -->
+    <div id="lcw-view" class="view">
+        <div class="game-area">
+            <h2 style="color: #800000; margin-top: 0;">Look, Cover, Write 🙈</h2>
+            <h3 id="lcw-progress" style="color: #555; margin-top: 0; margin-bottom: 5px;">Word 1 of 5</h3>
+            <div id="lcw-flash" style="height: 10px; width: 100%; margin-bottom: 10px; border-radius: 5px;"></div>
+            
+            <div class="game-word-box" id="lcw-word-display" style="border-color: #800000; min-height: 120px;">
+                <span id="lcw-target" style="font-size: 5.5rem; font-weight: bold;"></span>
+            </div>
+            
+            <input type="text" id="lcw-input" class="input-box" placeholder="Type word..." readonly style="display:none;">
+            
+            <div class="keyboard-container" id="lcw-kb-area" style="display:none; border-color: #800000;"></div>
+            
+            <div class="nav-buttons" id="lcw-controls" style="display:none;">
+                <button class="nav btn-home" onclick="playSound('click'); goHome()">🏠 Home</button>
+                <button class="nav" style="background:#800000; color:white;" onclick="checkLCW()">✅ Check</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Result View -->
+    <div id="result-view" class="view">
+        <div class="set-menu-container">
+            <h2 style="color: #827717;" id="result-title">Phonics Screening Result 🏆</h2>
+            <div id="result-score">0 / 40</div>
+            <p id="result-text" style="font-weight:bold; font-size: 1.4rem; margin-top:10px;"></p>
+            <button class="nav btn-home" style="margin-top: 20px;" onclick="playSound('click'); goHome()">🏠 Home</button>
+        </div>
+    </div>
+
+    <!-- Decoder View -->
+    <div id="decoder-view" class="view">
+        <h2 style="color: #0f5132; margin-top: 0;">Word Decoder 🐸</h2>
+        <input type="text" id="decoder-input" class="input-box" placeholder="Tap keys to build word..." readonly>
+        <div id="chips-area" class="decoder-chips"></div>
+        <div id="sentence-box" style="margin-bottom:10px; font-weight:bold; color:#6a1b9a; display:none; background: #f3e5f5; padding: 10px; border-radius: 10px; text-align: center; max-width: 80%;"></div>
+        <div class="keyboard-container" id="kb-area"></div>
+        <div class="nav-buttons">
+            <button class="nav btn-home" onclick="playSound('click'); goHome()">🏠 Home</button>
+            <button class="nav" style="background:#6a1b9a; color:white;" onclick="playSound('click'); showSentence()">✨ Fred's Idea</button>
+        </div>
+    </div>
+
+    <script>
+        // --- Web Audio API Logic ---
+        let audioCtx = null;
+        let isSoundEnabled = true;
+
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+            }
+        }
+
+        function toggleSound() {
+            isSoundEnabled = !isSoundEnabled;
+            const btn = document.getElementById('sound-toggle-btn');
+            if (isSoundEnabled) {
+                btn.innerText = '🔊 Sounds On';
+                btn.classList.add('on');
+                playSound('click');
+            } else {
+                btn.innerText = '🔇 Sounds Off';
+                btn.classList.remove('on');
+            }
+        }
+
+        function playSound(type) {
+            if (!isSoundEnabled) return;
+            initAudio();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            if (type === 'click') {
+                // Soft short pop for UI interactions
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.exponentialRampToValueAtTime(300, now + 0.05);
+                gainNode.gain.setValueAtTime(0.1, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                osc.start(now);
+                osc.stop(now + 0.05);
+            } else if (type === 'tick') {
+                // Very quiet, gentle tick for timers
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(800, now);
+                gainNode.gain.setValueAtTime(0.02, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+                osc.start(now);
+                osc.stop(now + 0.03);
+            } else if (type === 'correct') {
+                // Gentle rising chime (C5 to E5)
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now);
+                osc.frequency.setValueAtTime(659.25, now + 0.1);
+                gainNode.gain.setValueAtTime(0.0, now);
+                gainNode.gain.linearRampToValueAtTime(0.15, now + 0.05);
+                gainNode.gain.linearRampToValueAtTime(0.0, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (type === 'incorrect') {
+                // Gentle low thud
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.linearRampToValueAtTime(250, now + 0.2);
+                gainNode.gain.setValueAtTime(0.0, now);
+                gainNode.gain.linearRampToValueAtTime(0.15, now + 0.05);
+                gainNode.gain.linearRampToValueAtTime(0.0, now + 0.25);
+                osc.start(now);
+                osc.stop(now + 0.25);
+            }
+        }
+
+        // --- Core Application Logic ---
+        const emojiMap = { 
+            m:'⛰️', a:'🍎', s:'🐍', d:'🦖', t:'🏰', i:'🐜', n:'⚽🥅', p:'🏴‍☠️', g:'👧', o:'🍊', c:'🐛', k:'🦘', u:'☂️', b:'🥾', f:'🌸', e:'🥚', l:'🦵', h:'🐴', sh:'🤫', r:'🤖', j:'🎁', v:'🦅', y:'🐃', w:'🪱', th:'👸', z:'🤐', ch:'🐛🐴', qu:'👸☂️', x:'🤸', ng:'🧵', nk:'🚰', 
+            ay:'🎈', ee:'👀', igh:'🪁', ow:'❄️', oo:'🦁', 'oo-look':'📖👓', ar:'🏎️⭐', or:'🚪🔒', 
+            air:'❌🙅‍♂️', ir:'💃🌪️', ou:'📢🗣️', oy:'👦', 
+            ea:'☕🍰', oi:'🎁🎈👦', 'a-e':'🎂👩‍🍳', 'i-e':'😊✨', 'o-e':'📞🏠', 'u-e':'👹🐘', aw:'🥱🌅', are:'🤝❤️', ur:'👩‍⚕️👛', 
+            er:'✅✉️', ai:'🐌🌧️', oa:'🐐⛵', ew:'🍲🥄', ire:'🔥🚒', ear:'👂👂', ure:'💎✨', tion:'🔔', cious:'😋' 
+        };
+        
+        const sfList = [
+            'cious', 'tious', 'tion', 'augh', 'eigh', 'ough',
+            'ire', 'ear', 'ure', 'are', 'igh', 'air', 'tch', 'dge',
+            'th', 'sh', 'ch', 'qu', 'ng', 'nk', 'ck', 'ph', 'wh',
+            'ay', 'ee', 'ow', 'oo', 'ar', 'or', 'ir', 'ou', 'oy', 
+            'ea', 'oi', 'ai', 'oa', 'aw', 'ur', 'er', 'oe', 'ie', 
+            'ue', 'au', 'ey', 've', 'ce', 'se', 'ge', 'kn', 'gn', 'wr', 'mb'
+        ];
+        
+        const splitDigraphPatterns = [{ full: 'a-e', start: 'a', end: 'e' }, { full: 'e-e', start: 'e', end: 'e' }, { full: 'i-e', start: 'i', end: 'e' }, { full: 'o-e', start: 'o', end: 'e' }, { full: 'u-e', start: 'u', end: 'e' }];
+
+        const soundData = {
+            set1: [{s:'m', b:'mmmmm-mountain', t:'stretchy', h:'Down Maisie, over the mountain, over the mountain', e:'⛰️'}, {s:'a', b:'a-a-a-apple', t:'bouncy', h:'Round the apple, down the leaf', e:'🍎'}, {s:'s', b:'sssss-snake', t:'stretchy', h:'Slither down the snake', e:'🐍'}, {s:'d', b:'d-d-d-dinosaur', t:'bouncy', h:'Around his bottom, up his tall neck and down to his feet', e:'🦖'}, {s:'t', b:'t-t-t-tower', t:'bouncy', h:'Down the tower, across the tower', e:'🏰'}, {s:'i', b:'i-i-i-insect', t:'bouncy', h:'Down the body, dot for the head', e:'🐜'}, {s:'n', b:'nnnnn-net', t:'stretchy', h:'Down Nobby, over his net', e:'⚽🥅'}, {s:'p', b:'p-p-p-pirate', t:'bouncy', h:'Down the plait and over the pirate\'s face', e:'🏴‍☠️'}, {s:'g', b:'g-g-g-girl', t:'bouncy', h:'Around her face, down her hair and give her a curl', e:'👧'}, {s:'o', b:'o-o-o-orange', t:'bouncy', h:'All around the orange', e:'🍊'}, {s:'c', b:'c-c-c-caterpillar', t:'bouncy', h:'Curl around the caterpillar', e:'🐛'}, {s:'k', b:'k-k-k-kangaroo', t:'bouncy', h:'Down the kangaroo\'s body, tail and leg', e:'🦘'}, {s:'u', b:'u-u-u-umbrella', t:'bouncy', h:'Down and under, up to the top and draw the puddle', e:'☂️'}, {s:'b', b:'b-b-b-boot', t:'bouncy', h:'Down the laces to the heel, around the toe', e:'🥾'}, {s:'f', b:'fffff-flower', t:'stretchy', h:'Down the stem and draw the leaves', e:'🌸'}, {s:'e', b:'e-e-e-egg', t:'bouncy', h:'Lift off the top and scoop out the egg', e:'🥚'}, {s:'l', b:'lllll-leg', t:'stretchy', h:'Down the long leg', e:'🦵'}, {s:'h', b:'h-h-h-horse', t:'bouncy', h:'Down the head to the hooves and over his back', e:'🐴'}, {s:'sh', b:'shshshshsh', t:'stretchy', h:'Says shh to the horse', e:'🤫'}, {s:'r', b:'rrrrr-robot', t:'stretchy', h:'Down his back and then curl over his arm', e:'🤖'}, {s:'j', b:'j-j-j-jack-in-the-box', t:'bouncy', h:'Down his body, curl and dot', e:'🎁'}, {s:'v', b:'vvvvv-vulture', t:'stretchy', h:'Down a wing, up a wing', e:'🦅'}, {s:'y', b:'y-y-y-yak', t:'bouncy', h:'Down a horn, up a horn and under his chin', e:'🐃'}, {s:'w', b:'w-w-w-worm', t:'bouncy', r:'Wiggle down the worm', h:'Down, up, down, up', e:'🪱'}, {s:'th', b:'ththththth', t:'stretchy', h:'The princess in the tower is rescued by the horse', e:'👸🏰'}, {s:'z', b:'zzzzz-zig-zag', t:'stretchy', h:'Zig-zag-zig', e:'🤐'}, {s:'ch', b:'ch-ch-ch-ch', t:'bouncy', h:'The caterpillar\'s hairs tickle the horse\'s nose', e:'🐛🐴'}, {s:'qu', b:'qu-qu-qu-queen', t:'bouncy', h:'The queen carries her umbrella', e:'👸☂️'}, {s:'x', b:'x-x-x-exercise', t:'bouncy', h:'Down the arm and leg and repeat the other side', e:'🤸'}, {s:'ng', b:'nnnnnggggg', t:'stretchy', h:'A thing on a string', e:'🧵'}, {s:'nk', b:'nnnnnkkkkk', t:'stretchy', h:'I think I stink', e:'🚰'}],
+            set2: [{s:'ay', r:'May I play?', b:'ay-ay-ay', e:'🎈'}, {s:'ee', r:'What can you see?', b:'ee-ee-ee', e:'👀'}, {s:'igh', r:'Fly high', b:'igh-igh-igh', e:'🪁'}, {s:'ow', r:'Blow the snow', b:'ow-ow-ow', e:'❄️'}, {s:'oo', r:'Poo at the zoo', b:'oo-oo-oo', e:'🦁'}, {s:'oo', r:'Look at a book', b:'oo-oo-oo', e:'📖👓', italics: true}, {s:'ar', r:'Start the car', b:'ar-ar-ar', e:'🚗'}, {s:'or', r:'Shut the door', b:'or-or-or', e:'🚪'}, {s:'air', r:'That\'s not fair', b:'air-air-air', e:'❌🙅‍♂️'}, {s:'ir', r:'Whirl and twirl', b:'ir-ir-ir', e:'💃'}, {s:'ou', r:'Shout it out', b:'ou-ou-ou', e:'📢'}, {s:'oy', r:'Toy for a boy', b:'oy-oy-oy', e:'👦'}],
+            set3: [{s:'ea', r:'Cup of tea', b:'ea-ea-ea', e:'☕'}, {s:'oi', r:'Spoil the boy', b:'oi-oi-oi', e:'🎁🎈👦'}, {s:'a-e', r:'Make a cake', b:'a-e-a-e', e:'🎂👩‍🍳'}, {s:'i-e', r:'Nice smile', b:'i-e-i-e', e:'😊✨'}, {s:'o-e', r:'Phone home', b:'o-e-o-e', e:'📞🏠'}, {s:'u-e', r:'Huge brute', b:'u-e-u-e', e:'👹🐘'}, {s:'aw', r:'Yawn at dawn', b:'aw-aw-aw', e:'🥱🌅'}, {s:'are', r:'Share and care', b:'are-are-are', e:'🤝❤️'}, {s:'ur', r:'Nurse with a purse', b:'ur-ur-ur', e:'👩‍⚕️👛'}, {s:'er', r:'A better letter', b:'er-er-er', e:'✅✉️'}, {s:'ow', r:'Brown cow', b:'ow-ow-ow', e:'🐄🤠'}, {s:'ai', r:'Snail in the rain', b:'ai-ai-ai', e:'🐌🌧️'}, {s:'oa', r:'Goat in a boat', b:'oa-oa-oa', e:'🐐⛵'}, {s:'ew', r:'Chew the stew', b:'ew-ew-ew', e:'🍲🥄'}, {s:'ire', r:'Fire, fire!', b:'ire-ire-ire', e:'🔥🚒'}, {s:'ear', r:'Hear with your ear', b:'ear-ear-ear-hear', e:'👂👂'}, {s:'ure', r:'Sure it\'s pure', b:'ure-ure-ure', e:'💎✨'}, {s:'tion', r:'Pay attention!', b:'tion-tion-tion', e:'🔔'}, {s:'cious', r:'Delicious!', b:'cious-cious-delicious', e:'😋'}],
+            altSounds: [{s:'augh', words:['caught', 'daughter', 'naughty'], e:'🎣'}, {s:'eigh', words:['eight', 'weight', 'sleigh'], e:'⚖️'}, {s:'ph', words:['phone', 'dolphin', 'elephant'], e:'🐬'}, {s:'oe', words:['toe', 'Joe', 'goes'], e:'🦶'}, {s:'ie', words:['tie', 'pie', 'lie'], e:'👔'}, {s:'ue', words:['blue', 'glue', 'clue'], e:'🧪'}, {s:'wh', words:['whisk', 'white', 'whale'], e:'🐳'}, {s:'au', words:['Paul', 'launch', 'haul'], e:'🚀'}, {s:'ey', words:['key', 'donkey', 'valley'], e:'🗝️'}],
+            redWords: [{s:'I'},{s:'the'},{s:'my'},{s:'you'},{s:'said'},{s:'was'},{s:'to'},{s:'go'},{s:'he'},{s:'she'},{s:'me'},{s:'we'},{s:'they'},{s:'all'},{s:'are'},{s:'your'},{s:'want'},{s:'come'},{s:'some'},{s:'one'},{s:'school'},{s:'brother'},{s:'small'},{s:'watch'},{s:'who'},{s:'where'},{s:'here'},{s:'what'},{s:'so'},{s:'old'},{s:'any'},{s:'many'},{s:'other'},{s:'mother'},{s:'father'},{s:'love'},{s:'above'},{s:'once'},{s:'buy'},{s:'worse'},{s:'thought'},{s:'caught'},{s:'bought'},{s:'walk'},{s:'talk'},{s:'two'},{s:'through'},{s:'great'}]
+        };
+
+        const practicePool = {
+            'Set 1': { real: ['cat', 'dog', 'pig', 'sun', 'hat', 'bag', 'net', 'log', 'mud', 'hen', 'ship', 'fish', 'shop', 'wish', 'thin', 'bath', 'chip', 'chop', 'sing', 'bang', 'wink', 'pink', 'quiz', 'quit', 'fox', 'box', 'jam', 'jet', 'vet', 'van', 'web', 'wig', 'zap', 'zip', 'bell', 'mess', 'huff', 'doll', 'back', 'neck', 'duck', 'rock', 'tick', 'sick', 'lock', 'sack', 'pack', 'kick'], alien: ['vap', 'deg', 'pog', 'lun', 'bim', 'dut', 'tep', 'niff', 'pob', 'gog', 'caff', 'keb', 'biff', 'fep', 'lup', 'hish', 'shib', 'reff', 'vop', 'yut', 'woll', 'thun', 'zib', 'chud', 'quez', 'xop', 'ning', 'nonk', 'vash', 'foth', 'chup', 'chep', 'ponk', 'kazz', 'joff', 'vob', 'yim', 'thap', 'quig', 'zot', 'miff', 'doff', 'gull', 'yab'] },
+            'Set 2': { real: ['play', 'tray', 'say', 'stay', 'spray', 'seed', 'tree', 'green', 'sleep', 'feet', 'street', 'night', 'light', 'high', 'bright', 'fright', 'might', 'blow', 'snow', 'show', 'slow', 'flow', 'grow', 'zoo', 'moon', 'food', 'pool', 'spoon', 'tooth', 'book', 'look', 'foot', 'cook', 'wood', 'shook', 'car', 'star', 'dark', 'park', 'hard', 'smart', 'spark', 'shark', 'fork', 'born', 'torn', 'short', 'port'], alien: ['flay', 'zay', 'vray', 'scray', 'beed', 'gree', 'cleen', 'weet', 'breet', 'dight', 'vigh', 'pright', 'kight', 'tnow', 'zlow', 'clow', 'drow', 'voo', 'zood', 'vool', 'cloon', 'vooth', 'vook', 'mook', 'woot', 'zook', 'pood', 'dar', 'blar', 'vark', 'glay', 'sneed', 'tigh', 'dlow', 'proo', 'flook', 'smar', 'quair', 'thir', 'clou', 'smow', 'bigh', 'slay', 'dree'] },
+            'Set 3': { real: ['clean', 'dream', 'feast', 'please', 'real', 'team', 'spoil', 'join', 'voice', 'coin', 'cake', 'make', 'same', 'name', 'late', 'gate', 'smile', 'white', 'nice', 'like', 'time', 'hide', 'home', 'hope', 'spoke', 'note', 'broke', 'alone', 'brute', 'huge', 'june', 'flute', 'blue', 'tube', 'yawn', 'crawl', 'law', 'saw', 'dawn', 'share', 'care', 'square', 'nurse', 'purse', 'better', 'letter', 'burn', 'turn', 'churn', 'snail', 'rain'], alien: ['plean', 'sream', 'glease', 'keam', 'vpoil', 'koin', 'zoice', 'floin', 'pake', 'vake', 'vame', 'kate', 'zhite', 'vike', 'zhime', 'vide', 'zome', 'vope', 'voke', 'fote', 'vroke', 'vlone', 'vuge', 'clune', 'smute', 'zlue', 'vube', 'vawn', 'trawl', 'vaw', 'zhare', 'quare', 'flur', 'tice', 'pote', 'clame', 'zide', 'smoat', 'fleat', 'vure', 'slone', 'phope', 'smite', 'snape', 'zake'] }
+        };
+
+        const missingSoundPool = {
+            'Set 1': [
+                { w: 'cat', pre: 'c', post: 't', missing: 'a', options: ['a', 'e', 'o'], e: '🐱' },
+                { w: 'ship', pre: 'sh', post: 'p', missing: 'i', options: ['i', 'a', 'u'], e: '🚢' },
+                { w: 'fox', pre: 'f', post: 'x', missing: 'o', options: ['o', 'u', 'a'], e: '🦊' },
+                { w: 'bell', pre: 'b', post: 'll', missing: 'e', options: ['e', 'i', 'a'], e: '🔔' },
+                { w: 'duck', pre: 'd', post: 'ck', missing: 'u', options: ['u', 'o', 'a'], e: '🦆' }
+            ],
+            'Set 2': [
+                { w: 'play', pre: 'pl', post: '', missing: 'ay', options: ['ay', 'ai', 'a-e'], e: '🎈' },
+                { w: 'light', pre: 'l', post: 't', missing: 'igh', options: ['igh', 'ie', 'i-e'], e: '💡' },
+                { w: 'snow', pre: 'sn', post: '', missing: 'ow', options: ['ow', 'ou', 'oa'], e: '❄️' },
+                { w: 'car', pre: 'c', post: '', missing: 'ar', options: ['ar', 'or', 'ir'], e: '🚗' },
+                { w: 'boy', pre: 'b', post: '', missing: 'oy', options: ['oi', 'oy', 'o-e'], e: '👦' }
+            ],
+            'Set 3': [
+                { w: 'spoil', pre: 'sp', post: 'l', missing: 'oi', options: ['oi', 'oy', 'oa'], e: '🎁' },
+                { w: 'yawn', pre: 'y', post: 'n', missing: 'aw', options: ['aw', 'or', 'au'], e: '🥱' },
+                { w: 'nurse', pre: 'n', post: 'se', missing: 'ur', options: ['ur', 'ir', 'er'], e: '👩‍⚕️' },
+                { w: 'care', pre: 'c', post: '', missing: 'are', options: ['are', 'air', 'ear'], e: '🫂' },
+                { w: 'snail', pre: 'sn', post: 'l', missing: 'ai', options: ['ai', 'ay', 'a-e'], e: '🐌' }
+            ],
+            'Red Words': [
+                { w: 'said', pre: 's', post: 'd', missing: 'ai', options: ['ai', 'e', 'a'], e: '🗣️' },
+                { w: 'they', pre: 'th', post: '', missing: 'ey', options: ['ey', 'ay', 'a'], e: '👥' },
+                { w: 'what', pre: 'wh', post: 't', missing: 'a', options: ['a', 'o', 'e'], e: '❓' },
+                { w: 'some', pre: 's', post: 'me', missing: 'o', options: ['o', 'u', 'a'], e: '🍫' },
+                { w: 'school', pre: 'sch', post: 'l', missing: 'oo', options: ['oo', 'u', 'ew'], e: '🏫' }
+            ]
+        };
+
+        const lcwPool = {
+            'Set 1': [
+                ['cat', 'dog', 'pig', 'sun', 'hat'],
+                ['bag', 'net', 'log', 'mud', 'hen'],
+                ['ship', 'fish', 'shop', 'wish', 'thin'],
+                ['bath', 'chip', 'chop', 'sing', 'bang'],
+                ['wink', 'pink', 'quiz', 'quit', 'fox'],
+                ['box', 'jam', 'jet', 'vet', 'van'],
+                ['web', 'wig', 'zap', 'zip', 'bell'],
+                ['mess', 'huff', 'doll', 'back', 'neck'],
+                ['duck', 'rock', 'tick', 'sick', 'lock'],
+                ['sack', 'pack', 'kick', 'pick', 'sock']
+            ],
+            'Set 2': [
+                ['play', 'tray', 'say', 'stay', 'spray'],
+                ['seed', 'tree', 'green', 'sleep', 'feet'],
+                ['street', 'night', 'light', 'high', 'bright'],
+                ['fright', 'might', 'blow', 'snow', 'show'],
+                ['slow', 'flow', 'grow', 'zoo', 'moon'],
+                ['food', 'pool', 'spoon', 'tooth', 'book'],
+                ['look', 'foot', 'cook', 'wood', 'shook'],
+                ['car', 'star', 'dark', 'park', 'hard'],
+                ['smart', 'spark', 'shark', 'fork', 'born'],
+                ['torn', 'short', 'port', 'sort', 'sport']
+            ],
+            'Set 3': [
+                ['clean', 'dream', 'feast', 'please', 'real'],
+                ['team', 'spoil', 'join', 'voice', 'coin'],
+                ['cake', 'make', 'same', 'name', 'late'],
+                ['gate', 'smile', 'white', 'nice', 'like'],
+                ['time', 'hide', 'home', 'hope', 'spoke'],
+                ['note', 'broke', 'alone', 'brute', 'huge'],
+                ['june', 'flute', 'blue', 'tube', 'yawn'],
+                ['crawl', 'law', 'saw', 'dawn', 'share'],
+                ['care', 'square', 'bare', 'nurse', 'purse'],
+                ['better', 'letter', 'burn', 'turn', 'churn'],
+                ['snail', 'rain', 'tail', 'train', 'paint']
+            ],
+            'Red Words': [
+                ['I', 'the', 'to', 'go', 'he'],
+                ['she', 'me', 'we', 'be', 'no'],
+                ['my', 'you', 'are', 'all', 'so'],
+                ['was', 'said', 'your', 'want', 'they'],
+                ['come', 'some', 'one', 'once', 'love'],
+                ['here', 'where', 'there', 'who', 'what'],
+                ['any', 'many', 'old', 'above', 'buy'],
+                ['father', 'mother', 'brother', 'other', 'small'],
+                ['walk', 'talk', 'watch', 'school', 'two'],
+                ['worse', 'great', 'thought', 'caught', 'bought'],
+                ['through', 'half', 'could', 'should', 'would']
+            ]
+        };
+
+        let cardList = [], currentSetData = [], index = 0, currentMode = '', timerSpeed = 0, progressInterval = null, assessmentScore = 0, isAssessment = false;
+        let gameStartTime = 0, gameTimerInterval = null;
+        let msScore = 0;
+        let lastTickTime = 0;
+        
+        let lcwCardList = [], lcwTargetWord = '', lcwIndex = 0, lcwScore = 0;
+        
+        let touchstartX = 0, touchendX = 0, touchstartTime = 0;
+
+        function hideAllViews() { document.querySelectorAll('.view').forEach(v => v.style.display = 'none'); document.getElementById('home-screen').style.display = 'none'; }
+        
+        function goHome() { 
+            stopTimer(); stopGameTimer(); hideAllViews(); 
+            document.getElementById('home-screen').style.display = 'grid'; 
+            document.getElementById('decoder-input').value = ''; 
+            document.getElementById('sentence-box').style.display = 'none';
+        }
+        
+        function openMenu(id) {
+            playSound('click');
+            hideAllViews();
+            document.getElementById(id).style.display = 'flex';
+        }
+
+        function openSoundsFolder() { openMenu('sounds-folder-view'); }
+        function openPracticeCategoryMenu() { openMenu('practice-menu-view'); }
+        function openGameSelectionMenu() { openMenu('game-selection-view'); }
+        function openTestSelectionMenu() { openMenu('test-selection-view'); }
+        function openGuidance() { openMenu('guidance-view'); }
+        function openLCWMenu() { openMenu('lcw-menu-view'); }
+
+        function openPracticeSubMenu(setName) {
+            playSound('click');
+            hideAllViews();
+            document.getElementById('practice-type-view').style.display = 'flex';
+            document.getElementById('practice-type-title').innerText = setName + " Practice";
+            document.getElementById('real-words-btn').onclick = () => { playSound('click'); startPractice(setName, 'real'); };
+            document.getElementById('alien-words-btn').onclick = () => { playSound('click'); startPractice(setName, 'alien'); };
+        }
+
+        function startPractice(setName, type) {
+            currentMode = 'practice';
+            const words = practicePool[setName][type];
+            currentSetData = words.map(w => ({s: w, e: type === 'alien' ? '👽' : (emojiMap[w] || '✅'), r: 'Fred Talk'}));
+            
+            hideAllViews();
+            const mat = document.getElementById('sound-mat');
+            const titleColor = type === 'alien' ? '#1b5e20' : '#4a148c';
+            const bgColor = type === 'alien' ? 'var(--alien-green)' : 'var(--practice-purple)';
+            
+            document.getElementById('set-title').innerText = `${setName} - ${type === 'real' ? 'Real' : 'Alien'} Words`;
+            document.getElementById('set-title').style.color = titleColor;
+            
+            mat.innerHTML = '';
+            currentSetData.forEach((item, i) => {
+                const btn = document.createElement('div'); 
+                btn.className = 'sound-tile'; 
+                btn.innerText = item.s;
+                btn.style.borderColor = titleColor;
+                btn.style.backgroundColor = bgColor;
+                if(item.s.length > 7) btn.style.fontSize = '0.9rem';
+                else if (item.s.length > 5) btn.style.fontSize = '1.1rem';
+                
+                btn.onclick = () => { 
+                    playSound('click');
+                    cardList = [...currentSetData]; 
+                    index = i; 
+                    hideAllViews(); 
+                    document.getElementById('app-view').style.display = 'flex'; 
+                    document.getElementById('standard-nav').style.display = 'flex'; 
+                    document.getElementById('assessment-nav').style.display = 'none'; 
+                    updateCard(); 
+                };
+                mat.appendChild(btn);
+            });
+            
+            injectTimerOptions([0, 1000, 3000, 5000], "Speed:");
+            document.getElementById('grid-back-btn').onclick = () => openPracticeSubMenu(setName);
+            document.getElementById('set-menu-view').style.display = 'flex';
+        }
+
+        function startGame(level) {
+            currentMode = 'game';
+            let real = [], alien = [];
+            if (level === 'Mixed') {
+                ['Set 1', 'Set 2', 'Set 3'].forEach(s => { real = real.concat(practicePool[s].real); alien = alien.concat(practicePool[s].alien); });
+            } else {
+                real = practicePool[level].real;
+                alien = practicePool[level].alien;
+            }
+            const words = [];
+            for(let i=0; i<5; i++) {
+                words.push({s: real[Math.floor(Math.random()*real.length)], isReal: true});
+                words.push({s: alien[Math.floor(Math.random()*alien.length)], isReal: false});
+            }
+            cardList = words.sort(() => Math.random() - 0.5);
+            index = 0; assessmentScore = 0; hideAllViews(); 
+            document.getElementById('game-view').style.display = 'flex'; 
+            document.getElementById('choices-container-game').style.display = 'flex';
+            document.getElementById('game-clue-btn').style.display = 'block';
+            startGameTimer();
+            updateGameUI();
+        }
+
+        function startGameTimer() {
+            gameStartTime = Date.now();
+            let lastGameTick = 0;
+            gameTimerInterval = setInterval(() => {
+                let elapsed = Date.now() - gameStartTime;
+                if (elapsed - lastGameTick >= 1000) {
+                    playSound('tick');
+                    lastGameTick += 1000;
+                }
+                const el = document.getElementById('game-timer');
+                if (el) el.innerText = `Time: ${(elapsed / 1000).toFixed(1)}s`;
+            }, 100);
+        }
+
+        function stopGameTimer() { if (gameTimerInterval) clearInterval(gameTimerInterval); }
+
+        function updateGameUI() {
+            if(index >= cardList.length) {
+                stopGameTimer();
+                const finalTime = ((Date.now() - gameStartTime) / 1000).toFixed(1);
+                document.getElementById('game-score-display').innerText = `Final Score: ${assessmentScore} / 10 • ${finalTime}s`;
+                document.getElementById('gameWordDisplay').innerHTML = `<div style='font-size:2rem;'>Game Over!<br>Score: ${assessmentScore}/10</div>`;
+                document.getElementById('game-sound-clue').innerHTML = '';
+                document.getElementById('choices-container-game').style.display = 'none';
+                document.getElementById('game-clue-btn').style.display = 'none';
+                return;
+            }
+            
+            const word = cardList[index].s;
+            const display = document.getElementById('gameWordDisplay');
+            display.innerText = word;
+            
+            const len = word.length;
+            if (len > 7) display.style.fontSize = "3.5rem";
+            else if (len > 5) display.style.fontSize = "4.5rem";
+            else display.style.fontSize = "5.5rem";
+            
+            document.getElementById('game-score-display').innerText = `Round ${index + 1} / 10 • Score: ${assessmentScore}`;
+            document.getElementById('game-sound-clue').innerHTML = '';
+        }
+
+        function showGameClue() { decodeWordToContainer(cardList[index].s, document.getElementById('game-sound-clue')); }
+
+        function handleGameChoice(choice) {
+            if (index >= cardList.length) return;
+            if (choice === cardList[index].isReal) { 
+                assessmentScore++; 
+                flashGame('#c8e6c9'); 
+                playSound('correct');
+            } else {
+                flashGame('#ffcdd2');
+                playSound('incorrect');
+            }
+            index++;
+            setTimeout(updateGameUI, 400);
+        }
+
+        function flashGame(color) {
+            const flash = document.getElementById('game-flash');
+            flash.style.backgroundColor = color;
+            setTimeout(() => flash.style.backgroundColor = 'transparent', 400);
+        }
+
+        // --- Missing Sound Logic ---
+        function startMissingSound(setName) {
+            playSound('click');
+            currentMode = 'missing-sound';
+            cardList = [...missingSoundPool[setName]].sort(() => Math.random() - 0.5);
+            index = 0; msScore = 0;
+            hideAllViews();
+            document.getElementById('missing-sound-view').style.display = 'flex';
+            updateMissingSoundUI();
+        }
+
+        function updateMissingSoundUI() {
+            if (index >= cardList.length) {
+                document.getElementById('ms-score-display').innerText = `Final Score: ${msScore} / ${cardList.length}`;
+                document.getElementById('ms-word').innerHTML = `<div style='font-size:2rem;'>Game Over!</div>`;
+                document.getElementById('ms-choices').innerHTML = '';
+                document.getElementById('ms-emoji').innerText = '🎉';
+                return;
+            }
+            const data = cardList[index];
+            document.getElementById('ms-score-display').innerText = `Round ${index + 1} / ${cardList.length} • Score: ${msScore}`;
+            document.getElementById('ms-emoji').innerText = data.e;
+            document.getElementById('ms-word').innerHTML = `${data.pre}<span class="ms-blank"></span>${data.post}`;
+            
+            const choicesDiv = document.getElementById('ms-choices');
+            choicesDiv.innerHTML = '';
+            const opts = [...data.options].sort(() => Math.random() - 0.5);
+            opts.forEach(opt => {
+                const btn = document.createElement('div');
+                btn.className = 'choice-text-btn';
+                btn.innerText = opt;
+                btn.onclick = () => handleMissingChoice(opt, data.missing, data.w);
+                choicesDiv.appendChild(btn);
+            });
+        }
+
+        function handleMissingChoice(choice, correct, fullWord) {
+            const flash = document.getElementById('ms-flash');
+            if (choice === correct) {
+                msScore++;
+                playSound('correct');
+                flash.style.backgroundColor = '#c8e6c9';
+                document.getElementById('ms-word').innerHTML = `<span style="color:var(--correct-green)">${fullWord}</span>`;
+            } else {
+                playSound('incorrect');
+                flash.style.backgroundColor = '#ffcdd2';
+                document.getElementById('ms-word').innerHTML = `<span style="color:var(--incorrect-red)">${fullWord}</span>`;
+            }
+            setTimeout(() => flash.style.backgroundColor = 'transparent', 400);
+            index++;
+            setTimeout(updateMissingSoundUI, 1200);
+        }
+        function nextMissingSound() { playSound('click'); index++; updateMissingSoundUI(); }
+
+        // --- Look Cover Write Logic ---
+        function openLCWGroupSelection(category) {
+            playSound('click');
+            hideAllViews();
+            document.getElementById('lcw-group-view').style.display = 'flex';
+            document.getElementById('lcw-group-title').innerText = category + " Groups";
+            
+            const grid = document.getElementById('lcw-group-grid');
+            grid.innerHTML = '';
+            
+            const groups = lcwPool[category] || [];
+            groups.forEach((group, i) => {
+                const btn = document.createElement('div');
+                btn.className = 'menu-btn btn-red';
+                btn.innerText = `Group ${i + 1}`;
+                btn.onclick = () => { playSound('click'); startLCWGroup(category, i); };
+                grid.appendChild(btn);
+            });
+        }
+
+        function startLCWGroup(category, groupIndex) {
+            currentMode = 'lcw';
+            lcwCardList = lcwPool[category][groupIndex];
+            lcwIndex = 0;
+            lcwScore = 0;
+            hideAllViews();
+            document.getElementById('lcw-view').style.display = 'flex';
+            if (document.getElementById('lcw-kb-area').innerHTML === '') buildKeyboard('lcw-kb-area');
+            startLCWSequence();
+        }
+
+        function startLCWSequence() {
+            if (lcwIndex >= lcwCardList.length) {
+                const display = document.getElementById('lcw-word-display');
+                const input = document.getElementById('lcw-input');
+                const kb = document.getElementById('lcw-kb-area');
+                const controls = document.getElementById('lcw-controls');
+                const progress = document.getElementById('lcw-progress');
+                
+                input.style.display = 'none';
+                kb.style.display = 'none';
+                controls.style.display = 'none';
+                display.style.display = 'flex';
+                progress.innerText = `Group Complete!`;
+                
+                document.getElementById('lcw-target').innerHTML = `<div style="font-size:2rem; text-align:center; color: #2e7d32;">Great job!<br>Score: ${lcwScore} / ${lcwCardList.length}</div>`;
+                return;
+            }
+
+            const rw = lcwCardList[lcwIndex];
+            lcwTargetWord = rw;
+            
+            const display = document.getElementById('lcw-word-display');
+            const target = document.getElementById('lcw-target');
+            const input = document.getElementById('lcw-input');
+            const kb = document.getElementById('lcw-kb-area');
+            const controls = document.getElementById('lcw-controls');
+            const progress = document.getElementById('lcw-progress');
+            
+            progress.innerText = `Word ${lcwIndex + 1} of ${lcwCardList.length} • Score: ${lcwScore}`;
+
+            input.style.display = 'none';
+            kb.style.display = 'none';
+            controls.style.display = 'none';
+            display.style.display = 'flex';
+            input.value = '';
+            
+            target.style.fontSize = rw.length > 7 ? '3.5rem' : '5.5rem';
+            target.innerText = rw;
+            
+            // Wait 3 seconds, ticking softly
+            let ticks = 0;
+            playSound('tick');
+            const intVal = setInterval(() => {
+                ticks++;
+                if(ticks < 3) playSound('tick');
+                else clearInterval(intVal);
+            }, 1000);
+
+            setTimeout(() => {
+                target.innerText = "Cover!";
+                playSound('click'); // Little pop to notify it covered
+                setTimeout(() => {
+                    display.style.display = 'none';
+                    input.style.display = 'block';
+                    kb.style.display = 'flex';
+                    controls.style.display = 'flex';
+                }, 1000);
+            }, 3000);
+        }
+
+        function checkLCW() {
+            playSound('click');
+            const val = document.getElementById('lcw-input').value.trim().toLowerCase();
+            const flash = document.getElementById('lcw-flash');
+            if (val === lcwTargetWord.toLowerCase()) {
+                playSound('correct');
+                flash.style.backgroundColor = '#c8e6c9';
+                lcwScore++;
+                setTimeout(() => { 
+                    flash.style.backgroundColor = 'transparent'; 
+                    lcwIndex++;
+                    startLCWSequence();
+                }, 1000);
+            } else {
+                playSound('incorrect');
+                flash.style.backgroundColor = '#ffcdd2';
+                document.getElementById('lcw-input').value = lcwTargetWord; // Show correct
+                setTimeout(() => { 
+                    flash.style.backgroundColor = 'transparent'; 
+                    lcwIndex++;
+                    startLCWSequence();
+                }, 2500);
+            }
+        }
+
+        function startTest(assess) {
+            playSound('click');
+            isAssessment = assess;
+            assessmentScore = 0; index = 0; currentMode = 'test';
+            
+            const s1a = ['thut','pog','kel','jat','vab','quen','shig','zop','piff','quem','chud','tath'].map(s=>({s,e:'👽'}));
+            const s1r = ['cat','dog','pig','net','sun','bag','hat','log'].map(s=>({s,e:'✅'})); 
+            
+            const s2a = ['shrap','bling','froom','clasp','scraw','vair','gleat','snape','smite','vike','phope','slone'].map(s=>({s,e:'👽'}));
+            const s2r = ['clean','cake','smile','home','stair','bright','cloud','thought'].map(s=>({s,e:'✅'})); 
+            
+            cardList = [...s1a, ...s1r, ...s2a, ...s2r].sort(() => 0.5 - Math.random());
+            
+            hideAllViews(); document.getElementById('app-view').style.display = 'flex';
+            document.getElementById('standard-nav').style.display = assess ? 'none' : 'flex';
+            document.getElementById('assessment-nav').style.display = assess ? 'flex' : 'none';
+            injectTimerOptions([0, 5000, 10000], "Check Pace:");
+            updateCard();
+        }
+
+        function scoreAssessment(correct) {
+            if (correct) {
+                assessmentScore++;
+                playSound('correct');
+            } else {
+                playSound('incorrect');
+            }
+            
+            if (index < cardList.length - 1) { 
+                index++; 
+                updateCard(); 
+            } else {
+                hideAllViews();
+                document.getElementById('result-view').style.display = 'flex';
+                document.getElementById('result-title').innerText = "Phonics Screening Result 🏆";
+                document.getElementById('result-score').innerText = `${assessmentScore} / 40`;
+                const pass = assessmentScore >= 32;
+                if(pass) playSound('correct');
+                document.getElementById('result-text').innerText = pass ? "Likely Pass mark Achieved! 🌟" : "Working Towards mark";
+                document.getElementById('result-text').style.color = pass ? "var(--correct-green)" : "var(--incorrect-red)";
+            }
+        }
+
+        function keyboardAction(char) {
+            playSound('click');
+            let input;
+            if (document.getElementById('decoder-view').style.display === 'flex') input = document.getElementById('decoder-input');
+            else if (document.getElementById('lcw-view').style.display === 'flex') input = document.getElementById('lcw-input');
+            else return;
+
+            if (char === 'backspace') input.value = input.value.slice(0, -1);
+            else if (char === ' ') input.value += ' ';
+            else input.value += char;
+
+            if (document.getElementById('decoder-view').style.display === 'flex') updateDecoderChips();
+        }
+
+        window.addEventListener('keydown', (e) => {
+            const isDec = document.getElementById('decoder-view').style.display === 'flex';
+            const isLcw = document.getElementById('lcw-view').style.display === 'flex';
+            if (isDec || isLcw) {
+                const key = e.key.toLowerCase();
+                if (key === 'backspace' || key === ' ') { e.preventDefault(); keyboardAction(key); }
+                else if (/^[a-z]$/.test(key)) { keyboardAction(key); }
+                else return;
+                
+                const containerId = isDec ? '#kb-area' : '#lcw-kb-area';
+                const vk = document.querySelector(`${containerId} .key[data-key="${key}"]`);
+                if (vk) vk.classList.add('active-press');
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            const key = e.key.toLowerCase();
+            document.querySelectorAll(`.key[data-key="${key}"]`).forEach(vk => vk.classList.remove('active-press'));
+        });
+
+        function openDecoder() {
+            playSound('click');
+            hideAllViews(); document.getElementById('decoder-view').style.display = 'flex';
+            if (document.getElementById('kb-area').innerHTML === '') buildKeyboard('kb-area');
+        }
+
+        function buildKeyboard(containerId) {
+            const area = document.getElementById(containerId); area.innerHTML = '';
+            [['q','w','e','r','t','y','u','i','o','p'],['a','s','d','f','g','h','j','k','l'],['z','x','c','v','b','n','m']].forEach(row => {
+                const div = document.createElement('div'); div.className = 'keyboard-row';
+                row.forEach(key => {
+                    const k = document.createElement('div'); k.className = 'key'; 
+                    k.setAttribute('data-key', key); k.innerText = key;
+                    k.onclick = () => keyboardAction(key);
+                    div.appendChild(k);
+                });
+                area.appendChild(div);
+            });
+            const last = document.createElement('div'); last.className = 'keyboard-row';
+            const del = document.createElement('div'); del.className = 'key wide'; del.innerText = 'Delete'; 
+            del.setAttribute('data-key', 'backspace'); del.onclick = () => keyboardAction('backspace');
+            const spc = document.createElement('div'); spc.className = 'key space'; spc.innerText = 'Space'; 
+            spc.setAttribute('data-key', ' '); spc.onclick = () => keyboardAction(' ');
+            last.append(del, spc); area.appendChild(last);
+        }
+
+        function decodeWordToContainer(word, container) {
+            container.innerHTML = '';
+            container.style.transform = 'scale(1)';
+            let i = 0;
+            
+            const isSplitDigraph = (idx) => {
+                for (let pattern of splitDigraphPatterns) {
+                    if (word[idx] === pattern.start && idx + 2 < word.length && word[idx+2] === pattern.end) {
+                        const mid = word[idx+1];
+                        if (!['a','e','i','o','u'].includes(mid)) {
+                            const threeLetter = word.substring(idx, idx+3);
+                            if (!['are', 'ire', 'ure', 'ore'].includes(threeLetter)) return pattern;
+                        }
+                    }
+                }
+                return null;
+            };
+
+            while(i < word.length) {
+                let matched = false;
+
+                const splitPattern = isSplitDigraph(i);
+                if (splitPattern) {
+                    container.appendChild(createSplitChipElement(splitPattern.start, word[i+1], splitPattern.end));
+                    i += 3; 
+                    continue;
+                }
+
+                for(let sf of sfList) {
+                    if (word.substring(i, i+sf.length) === sf) {
+                        container.appendChild(createChipElement(sf, true));
+                        i += sf.length; matched = true; break;
+                    }
+                }
+                if(matched) continue;
+                
+                if (i < word.length - 1 && word[i] === word[i+1]) {
+                    container.appendChild(createChipElement(word[i] + word[i+1], true));
+                    i += 2; matched = true; continue;
+                }
+                
+                container.appendChild(createChipElement(word[i], false));
+                i++;
+            }
+            
+            setTimeout(() => {
+                const parentWidth = container.parentElement.offsetWidth * 0.95;
+                const chipsWidth = container.scrollWidth;
+                if (chipsWidth > parentWidth && chipsWidth > 0 && parentWidth > 0) {
+                    const ratio = parentWidth / chipsWidth;
+                    container.style.transform = `scale(${Math.max(ratio, 0.55)})`;
+                }
+            }, 10);
+        }
+
+        function createChipElement(text, isSf) {
+            const div = document.createElement('div');
+            div.className = 'chip' + (isSf ? ' special-friend' : '');
+            div.innerHTML = isSf ? `<span>${text}</span>` : `<span>${text}</span><div class="sound-dot"></div>`;
+            return div;
+        }
+
+        function createSplitChipElement(start, mid, end) {
+            const div = document.createElement('div');
+            div.className = 'chip split-digraph';
+            div.innerHTML = `<svg class="split-bridge" viewBox="0 0 100 20"><path d="M 10 20 Q 50 0 90 20" fill="none" stroke="#555" stroke-width="4" /></svg><div class="split-container" style="display:flex; align-items:center; gap:2px; position:relative;"><div style="display:flex; flex-direction:column; align-items:center;"><span>${start}</span></div><div style="display:flex; flex-direction:column; align-items:center;"><span>${mid}</span><div class="sound-dot"></div></div><div style="display:flex; flex-direction:column; align-items:center;"><span>${end}</span></div></div>`;
+            return div;
+        }
+
+        function updateDecoderChips() { 
+            decodeWordToContainer(document.getElementById('decoder-input').value.toLowerCase().trim(), document.getElementById('chips-area')); 
+            document.getElementById('sentence-box').style.display = 'none'; 
+        }
+
+        function showSentence() { 
+            playSound('click');
+            const b = document.getElementById('sentence-box'); b.style.display = 'block'; 
+            const s = ["The cat is red.", "I see the sun.", "A big green tree.", "The snail is slow.", "I can jump high."]; 
+            b.innerText = s[Math.floor(Math.random()*s.length)]; 
+        }
+
+        function injectTimerOptions(speeds, label) {
+            const container = document.getElementById('timer-options-container');
+            if(!container) return;
+            container.innerHTML = '';
+            speeds.forEach(speed => {
+                const btn = document.createElement('button');
+                btn.className = 'timer-opt' + (speed === timerSpeed ? ' active' : '');
+                btn.innerText = speed === 0 ? 'Off' : (speed / 1000) + 's';
+                btn.onclick = () => { playSound('click'); setTimerSpeed(speed, btn); };
+                container.appendChild(btn);
+            });
+        }
+
+        function setTimerSpeed(ms, btn) { timerSpeed = ms; document.querySelectorAll('.timer-opt').forEach(b => b.classList.remove('active')); btn.classList.add('active'); if(timerSpeed > 0) runTimer(); }
+        function stopTimer() { if (progressInterval) clearInterval(progressInterval); document.getElementById('progress-container').style.display = 'none'; }
+        
+        function runTimer() {
+            if (timerSpeed <= 0) return;
+            stopTimer();
+            document.getElementById('progress-container').style.display = 'block';
+            let start = Date.now();
+            lastTickTime = 0;
+            progressInterval = setInterval(() => {
+                let elapsed = Date.now() - start;
+                let pct = (elapsed / timerSpeed) * 100;
+                document.getElementById('progress-fill').style.width = Math.min(pct, 100) + '%';
+                
+                if (elapsed - lastTickTime >= 1000) {
+                    playSound('tick');
+                    lastTickTime += 1000;
+                }
+
+                if (elapsed >= timerSpeed) { 
+                    if(isAssessment && currentMode === 'test') scoreAssessment(false); 
+                    else nextCard(); 
+                }
+            }, 50);
+        }
+
+        function openSetMenu(mode) {
+            currentMode = mode; isAssessment = false;
+            const data = soundData[mode] || [];
+            currentSetData = [...data];
+            hideAllViews();
+            const mat = document.getElementById('sound-mat');
+            
+            const titleColor = mode === 'redWords' ? '#800000' : 'var(--rwi-red)';
+            const bgColor = mode === 'redWords' ? 'var(--pastel-red)' : 'var(--card-cream)';
+            
+            document.getElementById('set-title').innerText = mode.toUpperCase().replace('REDWORDS','RED WORDS').replace('ALTSOUNDS','ALT SOUNDS');
+            document.getElementById('set-title').style.color = titleColor;
+            
+            mat.innerHTML = '';
+            currentSetData.forEach((item, i) => {
+                const btn = document.createElement('div'); 
+                btn.className = 'sound-tile'; 
+                btn.innerText = item.s;
+                btn.style.borderColor = titleColor;
+                btn.style.backgroundColor = bgColor;
+                if(item.s.length > 6) btn.style.fontSize = '0.9rem';
+                else if (item.s.length > 4) btn.style.fontSize = '1.1rem';
+                
+                btn.onclick = () => { 
+                    playSound('click');
+                    cardList = [...currentSetData]; 
+                    index = i; 
+                    hideAllViews(); 
+                    document.getElementById('app-view').style.display = 'flex'; 
+                    document.getElementById('standard-nav').style.display = 'flex'; 
+                    document.getElementById('assessment-nav').style.display = 'none'; 
+                    updateCard(); 
+                };
+                mat.appendChild(btn);
+            });
+            injectTimerOptions([0, 1000, 3000, 5000], "Speed:");
+            document.getElementById('grid-back-btn').onclick = () => { playSound('click'); mode.startsWith('set') ? openSoundsFolder() : goHome(); };
+            document.getElementById('set-menu-view').style.display = 'flex';
+        }
+
+        function startCards(shuffle) { 
+            cardList = [...currentSetData]; 
+            if (shuffle) cardList.sort(() => Math.random() - 0.5); 
+            index = 0; hideAllViews(); document.getElementById('app-view').style.display = 'flex'; 
+            document.getElementById('standard-nav').style.display = 'flex';
+            document.getElementById('assessment-nav').style.display = 'none';
+            updateCard(); 
+        }
+        
+        function flipCard() { 
+            if(!isAssessment) { 
+                playSound('click');
+                stopTimer(); 
+                document.getElementById('cardInner').classList.toggle('is-flipped'); 
+            } 
+        }
+
+        function updateCard() {
+            const front = document.getElementById('frontDisplay'), back = document.getElementById('backContainer'), inner = document.getElementById('cardInner');
+            inner.style.left = '0px'; inner.style.opacity = '1'; inner.classList.remove('is-flipped');
+            const item = cardList[index];
+            if(!item) return;
+
+            front.innerText = item.s; 
+            front.style.fontStyle = item.italics ? "italic" : "normal";
+            
+            const len = item.s.length;
+            let fSize = "9rem";
+            if (len > 7) fSize = "3.8rem";
+            else if (len > 5) fSize = "5.5rem";
+            else if (len > 3) fSize = "7.5rem";
+            front.style.fontSize = fSize;
+
+            back.innerHTML = '';
+            
+            if (currentMode === 'practice' || currentMode === 'test') {
+                const emo = document.createElement('div'); emo.className = 'emoji-display'; emo.innerText = item.e || '📖'; back.appendChild(emo);
+                const chipsWrapper = document.createElement('div'); chipsWrapper.className = 'back-chips'; back.appendChild(chipsWrapper);
+                decodeWordToContainer(item.s, chipsWrapper);
+                if (item.r) { const r = document.createElement('div'); r.className = 'saying-row'; r.innerText = item.r; back.appendChild(r); }
+            } else if (currentMode === 'redWords') {
+                const rl = document.createElement('div'); rl.style.fontSize = fSize === '9rem' ? '4.5rem' : fSize; rl.style.fontWeight = 'bold'; rl.style.color = 'var(--rwi-red)'; rl.innerText = item.s; back.appendChild(rl);
+                const trickyNote = document.createElement('div'); trickyNote.className = 'saying-row'; trickyNote.innerText = "Tricky Red Word"; back.appendChild(trickyNote);
+            } else {
+                if (currentMode === 'set1' && item.t) { const tag = document.createElement('div'); tag.className = 'tag-text'; tag.innerText = item.t; back.appendChild(tag); }
+                const emo = document.createElement('div'); emo.className = 'emoji-display'; emo.innerText = item.e || '🔊'; back.appendChild(emo);
+                
+                const chip = document.createElement('div');
+                chip.className = 'chip-back' + (sfList.includes(item.s) ? ' chip-sf' : '');
+                let chipSize = "2.2rem"; if (len > 5) chipSize = "1.5rem"; chip.style.fontSize = chipSize;
+                chip.innerHTML = `<span>${item.s}</span>` + (sfList.includes(item.s) ? '' : '<div class="chip-dot"></div>');
+                back.appendChild(chip);
+
+                if (currentMode === 'altSounds' && item.words) {
+                    const list = document.createElement('div'); list.className = 'words-list-row'; list.innerText = item.words.join(', '); back.appendChild(list);
+                } else {
+                    if (item.b) { const b = document.createElement('div'); b.className = 'say-it-text'; b.innerText = item.b; if (item.italics) b.style.fontStyle = 'italic'; back.appendChild(b); }
+                    if (item.r && item.r.length > 3) { const r = document.createElement('div'); r.className = 'mnemonic-text'; r.innerHTML = `${item.e || '🔊'} ${item.r}`; if (item.italics) r.style.fontStyle = 'italic'; back.appendChild(r); }
+                    if (item.h) { const h = document.createElement('div'); h.className = 'handwriting-text'; h.innerHTML = `🖋️ ${item.h}`; back.appendChild(h); }
+                }
+            }
+
+            document.getElementById('counter').innerText = `${index + 1} / ${cardList.length}`;
+            if (timerSpeed > 0) runTimer();
+        }
+
+        function nextCard() { playSound('click'); stopTimer(); index = (index + 1) % cardList.length; updateCard(); }
+        function prevCard() { playSound('click'); stopTimer(); index = (index - 1 + cardList.length) % cardList.length; updateCard(); }
+
+        const mainCardArea = document.getElementById('mainCardContainer');
+        mainCardArea.addEventListener('touchstart', e => { touchstartX = e.changedTouches[0].screenX; touchstartTime = Date.now(); }, {passive: true});
+        mainCardArea.addEventListener('touchend', e => {
+            touchendX = e.changedTouches[0].screenX;
+            const dx = touchendX - touchstartX;
+            if (Math.abs(dx) < 20 && (Date.now() - touchstartTime) < 250) { flipCard(); }
+            else if (dx < -70) { playSound('click'); document.getElementById('cardInner').style.left = '-100px'; document.getElementById('cardInner').style.opacity = '0'; setTimeout(nextCard, 150); }
+            else if (dx > 70) { playSound('click'); document.getElementById('cardInner').style.left = '100px'; document.getElementById('cardInner').style.opacity = '0'; setTimeout(prevCard, 150); }
+        }, {passive: true});
+    </script>
+</body>
+</html>
